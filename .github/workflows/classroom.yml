@@ -1,51 +1,28 @@
-name: Autograding
-
-on: [push, pull_request]
-
+name: Autograding Tests
+'on':
+- push
+- repository_dispatch
+permissions:
+  checks: write
+  actions: read
+  contents: read
 jobs:
-  autograde:
+  run-autograding-tests:
     runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.12'
-
-      - name: Install dependencies
-        run: |
-          # Install any dependencies your autograder requires
-          pip install -r requirements.txt
-
-      - name: Run autograder
-        run: |
-          # Execute your autograding script
-          python test_html.py
-
-      - name: Debug the results file
-        run: |
-          cat results.json
-          # Ensure the results file has the correct format and is non-empty
-
-      - name: Upload results
-        id: autograder_results
-        run: |
-          # Ensure the file isn't empty before passing it to the environment variable
-          if [[ -s results.json ]]; then
-            echo "result=$(cat results.json)" >> $GITHUB_ENV
-          else
-            echo "Error: results.json is empty!" >> $GITHUB_ENV
-            exit 1
-          fi
-
-      - name: Debug environment variable
-        run: echo "AUTOGRADER_RESULTS is: ${{ env.result }}"
-
-      - name: Report results to GitHub Classroom
-        uses: classroom-resources/autograding-grading-reporter@v1
-        with:
-          runners: autograder
-        env:
-          AUTOGRADER_RESULTS: ${{ env.result }}
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Etlap-test
+      id: etlap-test
+      uses: classroom-resources/autograding-python-grader@v1
+      with:
+        timeout: 10
+        max-score: 40
+        setup-command: pip install bs4 json cssutils
+    - name: Autograding Reporter
+      uses: classroom-resources/autograding-grading-reporter@v1
+      env:
+        ETLAP-TEST_RESULTS: "${{steps.etlap-test.outputs.result}}"
+      with:
+        runners: etlap-test
